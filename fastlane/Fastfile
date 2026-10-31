@@ -1,6 +1,7 @@
 default_platform(:android)
 
-AAB_PATH = "../build/app/outputs/bundle/release/app-release.aab".freeze
+# Absolute: supply checks the path against the process cwd, which is not the repo root.
+AAB_PATH = File.expand_path("../build/app/outputs/bundle/release/app-release.aab", FastlaneCore::FastlaneFolder.path).freeze
 
 PLAY_TRACKS = %w[production beta alpha internal].freeze
 
