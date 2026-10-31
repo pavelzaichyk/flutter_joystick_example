@@ -48,3 +48,10 @@ app.*.map.json
 .wrangler/
 .dev.vars*
 node_modules/
+
+# fastlane
+fastlane/report.xml
+fastlane/README.md
+*.json.key
+vendor/bundle/
+.bundle/

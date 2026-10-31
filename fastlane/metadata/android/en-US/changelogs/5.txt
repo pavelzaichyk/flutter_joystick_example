@@ -1,0 +1,1 @@
+Updated for current Android versions, plus stability improvements.

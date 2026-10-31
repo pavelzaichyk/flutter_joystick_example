@@ -1,0 +1,11 @@
+The Flutter Joystick Example app showcases a versatile and customizable joystick widget designed for Flutter applications. This example demonstrates how to implement and use the joystick widget for various interactive purposes, such as game controls or navigational aids within your apps. The joystick is highly configurable and supports a wide range of customization options to fit the needs of your specific application.
+
+Key Features:
+- Easy integration with Flutter projects
+- Highly customizable joystick appearance and behavior
+- Smooth and responsive control
+- Demonstration of practical use cases
+
+This app serves as an educational tool for developers looking to enhance their Flutter applications with interactive joystick controls.
+
+For more information, visit our [GitHub repository](https://github.com/pavelzaichyk/flutter_joystick).

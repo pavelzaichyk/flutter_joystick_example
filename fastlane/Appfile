@@ -1,0 +1,3 @@
+package_name("com.rebeloid.flutter_joystick_example")
+# Path to the Play service account JSON; in CI it is written from a secret.
+json_key_file(ENV["PLAY_JSON_KEY_FILE"]) if ENV["PLAY_JSON_KEY_FILE"]

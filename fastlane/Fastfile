@@ -1,0 +1,79 @@
+default_platform(:android)
+
+AAB_PATH = "../build/app/outputs/bundle/release/app-release.aab".freeze
+
+PLAY_TRACKS = %w[production beta alpha internal].freeze
+
+# `version: 1.2.3+4` in pubspec.yaml -> ["1.2.3", 4]
+def pubspec_version
+  raw = File.read("../pubspec.yaml")[/^version:\s*(\S+)/, 1]
+  name, code = raw.split("+")
+  UI.user_error!("pubspec.yaml version '#{raw}' has no +buildNumber") if code.to_s.empty?
+  [name, code.to_i]
+end
+
+# Play rejects release notes longer than this per locale.
+MAX_NOTES_CHARS = 500
+
+platform :android do
+  desc "Fail unless every listing locale has non-empty, in-limit notes for this build number"
+  lane :check_notes do
+    _name, code = pubspec_version
+    locales = Dir["metadata/android/*"].select { |d| File.directory?(d) }
+    UI.user_error!("No locales found in fastlane/metadata/android") if locales.empty?
+
+    locales.each do |dir|
+      locale = File.basename(dir)
+      file = File.join(dir, "changelogs", "#{code}.txt")
+      UI.user_error!("Missing release notes: fastlane/#{file}") unless File.file?(file)
+      notes = File.read(file).strip
+      UI.user_error!("Release notes are empty: fastlane/#{file}") if notes.empty?
+      if notes.length > MAX_NOTES_CHARS
+        UI.user_error!("Release notes for #{locale} are #{notes.length} chars (max #{MAX_NOTES_CHARS})")
+      end
+      prev = Dir[File.join(dir, "changelogs", "*.txt")].reject { |f| File.basename(f, ".txt").to_i >= code }
+                                                         .max_by { |f| File.basename(f, ".txt").to_i }
+      UI.important("#{locale}: notes are identical to the previous release's") if prev && File.read(prev).strip == notes
+    end
+    UI.success("Release notes OK for #{code} (#{locales.map { |d| File.basename(d) }.join(', ')})")
+  end
+
+  desc "Fail fast if the pubspec build number is not higher than every version code on Play"
+  lane :check_version do
+    name, code = pubspec_version
+
+    tag = ENV["GITHUB_REF_NAME"]
+    if ENV["GITHUB_REF_TYPE"] == "tag" && tag != "v#{name}"
+      UI.user_error!("Tag '#{tag}' does not match pubspec version name 'v#{name}'")
+    end
+
+    published = PLAY_TRACKS.flat_map do |track|
+      google_play_track_version_codes(track: track)
+    end
+    highest = published.max.to_i
+    UI.user_error!("Build number #{code} must be higher than #{highest} already on Play. Bump the +N in pubspec.yaml.") if code <= highest
+    UI.success("Build #{name}+#{code} is free (highest on Play: #{highest})")
+  end
+
+  desc "Build the release AAB and publish it with the store listing to production"
+  lane :release do
+    check_notes
+    check_version
+    sh("flutter", "build", "appbundle", "--release")
+    upload_to_play_store(
+      track: "production",
+      aab: AAB_PATH,
+      skip_upload_screenshots: true,
+      skip_upload_images: true
+    )
+  end
+
+  desc "Push only the store listing (text and images) in fastlane/metadata/android"
+  lane :metadata do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true
+    )
+  end
+end
